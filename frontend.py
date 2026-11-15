@@ -17,10 +17,10 @@ tab1, tab2 = st.tabs(["🎯 Single Product Prediction", "📂 Batch Prediction"]
 
 with tab1:
     st.subheader("Enter Product and Store Details")
-    
+
     # Input layout columns
     col1, col2 = st.columns(2)
-    
+
     with col1:
         product_weight = st.number_input("Product Weight (kg)", min_value=1.0, max_value=30.0, value=12.5, step=0.1)
         product_sugar_content = st.selectbox("Sugar Content", ["Low Sugar", "Regular", "No Sugar"])
@@ -32,7 +32,7 @@ with tab1:
             "Meat", "Soft Drinks", "Breads", "Hard Drinks", "Others",
             "Starchy Foods", "Breakfast", "Seafood"
         ])
-        
+
     with col2:
         store_establishment_year = st.slider("Store Establishment Year", min_value=1980, max_value=2026, value=2000, step=1)
         store_size = st.selectbox("Store Size", ["Small", "Medium", "High"])
@@ -55,7 +55,7 @@ with tab1:
             "Store_Location_City_Type": store_location_city_type,
             "Store_Type": store_type
         }
-        
+
         try:
             response = requests.post(f"{BACKEND_URL}/v1/predict", json=payload)
             if response.status_code == 200:
@@ -70,35 +70,35 @@ with tab1:
 with tab2:
     st.subheader("Upload CSV File for Batch Forecasting")
     st.write("The CSV file must include the exact feature columns required by the model.")
-    
+
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-    
+
     if uploaded_file is not None:
         # Read and display a preview of the data
         df = pd.read_csv(uploaded_file)
         st.write("### Preview of uploaded dataset:")
         st.dataframe(df.head(10))
-        
+
         if st.button("Run Batch Forecast"):
             # Rewind file pointer to the beginning for sending via requests
             uploaded_file.seek(0)
             files = {'file': (uploaded_file.name, uploaded_file, 'text/csv')}
-            
+
             try:
                 with st.spinner('Generating predictions...'):
                     response = requests.post(f"{BACKEND_URL}/v1/predictbatch", files=files)
-                
+
                 if response.status_code == 200:
                     predictions = response.json()
-                    
+
                     # Map predictions back into our dataframe
                     # Assuming predictions dict keys are string representation of the index or Product_Id
                     df['Predicted_Sales'] = df.index.map(lambda x: predictions.get(str(x), predictions.get(df.iloc[x].get('Product_Id', None), None)))
-                    
+
                     st.success("🎉 Predictions generated successfully!")
                     st.write("### Forecasted Sales Output Preview:")
                     st.dataframe(df)
-                    
+
                     # Option to download the prediction CSV
                     csv = df.to_csv(index=False).encode('utf-8')
                     st.download_button(
